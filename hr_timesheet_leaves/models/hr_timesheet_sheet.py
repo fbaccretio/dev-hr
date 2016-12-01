@@ -8,16 +8,14 @@ class HrTimesheetSheetHTL(models.Model):
 
     @api.onchange('state')
     def onchange_state(self):
+        self.ensure_one()
+
         if self.state == 'new':
-            # self.env['hr_timesheet_sheet.sheet.account'].create({
-            #     'name': 1,
-            #     'sheet_id': self.id,
-            #     'total': 0,
-            # })
             domain = [
                 ('use_tasks', '=', True),
                 ('use_leaves', '=', True),
-                ('active', '=', True),   # and leave_type not false
+                ('active', '=', True),
+                ('leave_type', '!=', False),
             ]
             an_accounts = self.env['account.analytic.account'].search(domain)
             for acc in an_accounts:
@@ -33,3 +31,46 @@ class HrTimesheetSheetHTL(models.Model):
                     'sheet_id': self.id,
                     'project_id': proj_id.id,
                 })
+
+        # if self.state == 'done':
+        #     # Approved by manager.
+        #     # It's safe to create leaves
+        #     days_grouped = {}
+        #     for t in self.timesheet_ids:
+        #         if t.date not in days_grouped:
+        #             days_grouped[t.date] = [{
+        #                 'name': t.name,
+        #                 'holiday_status_id': t.leave_type.id,
+        #                 'unit_amount': t.unit_amount,
+        #                 'employee_id': self.employee_id.id,
+        #             }]
+        #         else:
+        #             for el in days_grouped[t.date]:
+        #                 if el['holiday_status_id'] == t.leave_type.id:
+        #                     el['unit_amount'] += t.unit_amount
+        #                 else:
+        #                     el.append()
+
+    @api.multi
+    def write(self, vals):
+        print 'write'
+        # for t in self.timesheet_ids:
+        #     print 'ts-----'
+        #     print t.name
+        #     print t.unit_amount
+        #     print t.date
+        #     print t.project_id.name
+        #     print t.user_id.name
+        return super(HrTimesheetSheetHTL, self).write(vals)
+
+    @api.model
+    def create(self, vals):
+        print 'create'
+        for t in self.timesheet_ids:
+            print 'ts-----'
+            print t.name
+            print t.unit_amount
+            print t.date
+            print t.project_id.name
+            print t.user_id.name
+        return super(HrTimesheetSheetHTL, self).create(vals)

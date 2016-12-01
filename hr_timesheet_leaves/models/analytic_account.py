@@ -14,3 +14,15 @@ class HTLAccountAnalyticAccount(models.Model):
         comodel_name="hr.holidays.status",
         string='Leave Type',
         domain="[('active', '=', True)]")
+
+
+class HTLAccountAnalyticLine(models.Model):
+    _inherit = 'account.analytic.line'
+
+    @api.multi
+    def write(self, vals):
+        return super(HTLAccountAnalyticLine, self).write(vals)
+
+    @api.model
+    def create(self, vals):
+        return super(HTLAccountAnalyticLine, self).create(vals)
