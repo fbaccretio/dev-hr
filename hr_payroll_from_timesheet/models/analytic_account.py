@@ -32,3 +32,9 @@ class AccountAnalyticAccountPFT(models.Model):
             # remove whitespaces
             vals['salary_code'] = vals['salary_code'].replace(" ", "")
         return super(AccountAnalyticAccountPFT, self).create(vals)
+
+
+class AccountAnalyticLinePFT(models.Model):
+    _inherit = 'account.analytic.line'
+    # reference to timesheet state for domain criteria
+    sheet_state = fields.Selection(related='sheet_id.state')

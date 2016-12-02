@@ -6,28 +6,6 @@ from openerp import models, fields, api, exceptions, _
 class HrPayslipPFT(models.Model):
     _inherit = 'hr.payslip'
 
-    # def _default_date_from(self):
-    #     user = self.env['res.users'].browse(self.env.uid)
-    #     r = user.company_id and user.company_id.timesheet_range or 'month'
-    #     if r == 'month':
-    #         return time.strftime('%Y-%m-01')
-    #     elif r == 'week':
-    #         return (datetime.today() + relativedelta(weekday=0, days=-6)).strftime('%Y-%m-%d')
-    #     elif r == 'year':
-    #         return time.strftime('%Y-01-01')
-    #     return fields.date.context_today(self)
-    #
-    # def _default_date_to(self):
-    #     user = self.env['res.users'].browse(self.env.uid)
-    #     r = user.company_id and user.company_id.timesheet_range or 'month'
-    #     if r == 'month':
-    #         return (datetime.today() + relativedelta(months=+1, day=1, days=-1)).strftime('%Y-%m-%d')
-    #     elif r == 'week':
-    #         return (datetime.today() + relativedelta(weekday=6)).strftime('%Y-%m-%d')
-    #     elif r == 'year':
-    #         return time.strftime('%Y-12-31')
-    #     return fields.date.context_today(self)
-
     @api.model
     def get_worked_day_lines(self, contract_ids, date_from, date_to):
         """
@@ -35,17 +13,49 @@ class HrPayslipPFT(models.Model):
         @return: returns a list of dict containing the input that should be
         applied for the given contract between date_from and date_to
         """
-
-        # An example of dict
-        #     'name': _("Normal Working Days paid at 100%"),
-        #     'sequence': 1,
-        #     'code': 'WORK100',
-        #     'number_of_days': 0.0,
-        #     'number_of_hours': 0.0,
-        #     'contract_id': contract.id,
+        # TODO  for contract in self.env['hr.contract'].browse(contract_ids)
         domain = [
-            ('use_tasks', '=', True),
-            ('use_leaves', '=', True),
-            ('active', '=', True),
-            ('leave_type', '!=', False),
+            ('date', '>=', self.date_from),
+            ('date', '<=', self.date_to),
+            ('user_id', '=', self.employee_id.user_id.id),
+            ('sheet_state', '=', 'draft'),  # TODO change to 'done'
+            ('company_id', '=', self.company_id.id),
         ]
+        analytic_lines = self.env['account.analytic.line'].search(domain)
+
+        res = []
+        attendances = {
+                 'name': _("Normal Working Days paid at 100%"),
+                 'sequence': 1,
+                 'code': 'WORK100',
+                 'number_of_days': 0.0,
+                 'number_of_hours': 0.0,
+                 'contract_id': contract_ids[0],    # FIXME
+            }
+        leaves = {}
+
+        for l in analytic_lines:
+            # TODO group by day at first!
+            print '{} {} {}'.format(l.name, l.unit_amount, l.date)
+            if not l.account_id.salary_code:
+                attendances['number_of_days'] += 1
+                attendances['number_of_hours'] += l.unit_amount
+            else:
+                found = False
+                for el in res:
+                    if not found and el['code'] == l.account_id.salary_code:
+                        found = True
+                        el['number_of_days'] += 1
+                        el['number_of_hours'] += l.unit_amount
+                if not found:
+                    res.append({
+                        'name': l.account_id.name,
+                        'sequence': 2,
+                        'code': l.account_id.salary_code,
+                        'number_of_days': 1,
+                        'number_of_hours': l.unit_amount,
+                        'contract_id': contract_ids[0],    # FIXME
+                    })
+                pass
+        res.append(attendances)
+        return res

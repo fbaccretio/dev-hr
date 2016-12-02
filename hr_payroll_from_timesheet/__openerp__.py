@@ -15,7 +15,7 @@ information from timesheet is taken into account.
     'depends': [
         'hr_timesheet',
         'hr_timesheet_sheet',
-        'analytic',
+        'hr_payroll',
     ],
     'data': [
         'views/analytic_account_view.xml',
