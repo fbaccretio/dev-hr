@@ -23,6 +23,38 @@ class HrPayslipPFT(models.Model):
         ]
         analytic_lines = self.env['account.analytic.line'].search(domain)
 
+        # same query using SQL but with grouping already done:
+        query = """
+        SELECT
+            l.date, l.account_id, a.salary_code, SUM(l.unit_amount) AS amt
+        FROM
+            account_analytic_line l
+            INNER JOIN account_analytic_account a
+                ON a.id = l.account_id
+            INNER JOIN hr_timesheet_sheet_sheet s
+                ON l.sheet_id = s.id
+        WHERE
+            l.date >= '{}'
+            AND l.date <= '{}'
+            AND l.user_id = {}
+            AND l.company_id = {}
+            AND s.state = '{}'
+        GROUP BY
+            l.date, l.account_id, a.salary_code
+        ORDER BY
+            l.date;
+        """.format(
+            self.date_from,
+            self.date_to,
+            self.employee_id.user_id.id,
+            self.company_id.id,
+            'draft')    # FIXME 'done'
+        self.env.cr.execute(query)
+        for row in self.env.cr.dictfetchall():
+            print row
+    # returns list of dicts
+    # {'date': '2016-12-01', 'salary_code': None, 'account_id': 1, 'amt': 4.0}
+
         res = []
         attendances = {
                  'name': _("Normal Working Days paid at 100%"),
@@ -35,8 +67,8 @@ class HrPayslipPFT(models.Model):
         leaves = {}
 
         for l in analytic_lines:
-            # TODO group by day at first!
-            print '{} {} {}'.format(l.name, l.unit_amount, l.date)
+            # should be grouped by (day, account_id) but sql will do it for us
+            print '{} {} {}'.format(l.date, l.unit_amount, l.account_id)
             if not l.account_id.salary_code:
                 attendances['number_of_days'] += 1
                 attendances['number_of_hours'] += l.unit_amount
