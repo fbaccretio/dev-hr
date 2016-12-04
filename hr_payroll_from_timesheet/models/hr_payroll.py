@@ -55,6 +55,20 @@ class HrPayslipPFT(models.Model):
         for rec in self:
             rec.hours_saldo = rec.hours_worked - rec.hours_scheduled
 
+    @api.multi
+    def action_compensateOvetime(self):
+        for rec in self:
+            w_line = self.env['hr.payslip.worked_days'].create({
+                'name': 'Overtime Compensation',
+                'payslip_id': rec.id,
+                'sequence': 100,
+                'code': 'OVRT_COMP',
+                'number_of_days': (-1) * round(rec.hours_saldo/8, 0),
+                'number_of_hours': (-1) * rec.hours_saldo,
+                'contract_id': rec.contract_id.id,
+            })
+            # TODO post analytic entry too
+
     @api.model
     def get_worked_day_lines(self, contract_ids, date_from, date_to):
         """

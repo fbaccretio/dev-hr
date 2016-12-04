@@ -13,15 +13,19 @@
                         <group>
                         </group>
                         <group>
-                            <field name="hours_scheduled"/>
-                            <field name="hours_worked"/>
-                            <field name="hours_saldo"/>
+                            <field name="hours_worked" widget="float_time"/>
+                            <field name="hours_scheduled" widget="float_time"/>
+                            <div colspan="2" attrs="{'invisible': [('hours_saldo','&lt;=', 0)]}">
+                                An overtime of <strong><field name="hours_saldo" widget="float_time" class="oe_inline"/></strong> hours will be moved to the next month
+                                <button string="Compensate now" name="action_compensateOvetime" type="object" class="btn btn-primary btn-sm"/>
+                            </div>
                         </group>
                     </group>
                  </xpath>
 
                 <xpath expr="//field[@name='number_of_hours']" position="attributes">
                     <attribute name="sum">Total Working Hours</attribute>
+                    <attribute name="widget">float_time</attribute>
                 </xpath>
             </data>
             </field>
