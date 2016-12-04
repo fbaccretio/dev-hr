@@ -15,6 +15,7 @@
                         <group>
                             <field name="hours_scheduled"/>
                             <field name="hours_worked"/>
+                            <field name="hours_saldo"/>
                         </group>
                     </group>
                  </xpath>

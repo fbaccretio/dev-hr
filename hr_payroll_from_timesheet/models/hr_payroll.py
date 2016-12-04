@@ -21,6 +21,10 @@ class HrPayslipPFT(models.Model):
         help='Total Woked Hours + Leaves for current month',
         compute='_compute_hours_worked',
         store=True)
+    hours_saldo = fields.Float(
+        string='Saldo Hours',
+        compute='_compute_hours_saldo',
+        store=True)
 
     @api.depends('date_from', 'date_to', 'contract_id')
     def _compute_hours_scheduled(self):
@@ -45,6 +49,11 @@ class HrPayslipPFT(models.Model):
             for line in rec.worked_days_line_ids:
                 total_hrs += line.number_of_hours
             rec.hours_worked = total_hrs
+
+    @api.depends('hours_scheduled', 'hours_worked')
+    def _compute_hours_saldo(self):
+        for rec in self:
+            rec.hours_saldo = rec.hours_worked - rec.hours_scheduled
 
     @api.model
     def get_worked_day_lines(self, contract_ids, date_from, date_to):
