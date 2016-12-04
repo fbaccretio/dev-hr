@@ -28,7 +28,7 @@ class AccountAnalyticAccountPFT(models.Model):
 
     @api.model
     def create(self, vals):
-        if 'salary_code' in vals vals['salary_code'] is not False:
+        if 'salary_code' in vals and vals['salary_code'] is not False:
             # remove whitespaces
             vals['salary_code'] = vals['salary_code'].replace(" ", "")
         return super(AccountAnalyticAccountPFT, self).create(vals)
