@@ -58,6 +58,25 @@ class HrPayslipPFT(models.Model):
     @api.multi
     def action_compensateOvetime(self):
         for rec in self:
+            user_id = rec.contract_id.employee_id.user_id
+            date = rec.date_from  # on date_to there may be no timesheet yet?
+            a_entry = self.env['account.analytic.line'].create({
+                'account_id': 3,    # TODO make configurable
+                'user_id': user_id.id,
+                'company_id': user_id.company_id.id,
+                'unit_amount': (-1) * rec.hours_saldo,
+                'date': date,
+                'name': 'Overtime Compensation',
+                'project_id': 3,    # TODO make configurable
+                # 'sheet_id': ,
+            })
+            sheets = self.env['hr_timesheet_sheet.sheet'].search(
+                [('date_to', '>=', date), ('date_from', '<=', date),
+                 ('employee_id.user_id.id', '=', user_id.id)])
+            if sheets:
+                a_entry.sheet_id_computed = sheets[0]
+                a_entry.sheet_id = sheets[0]
+
             w_line = self.env['hr.payslip.worked_days'].create({
                 'name': 'Overtime Compensation',
                 'payslip_id': rec.id,
@@ -67,7 +86,6 @@ class HrPayslipPFT(models.Model):
                 'number_of_hours': (-1) * rec.hours_saldo,
                 'contract_id': rec.contract_id.id,
             })
-            # TODO post analytic entry too
 
     @api.model
     def get_worked_day_lines(self, contract_ids, date_from, date_to):
