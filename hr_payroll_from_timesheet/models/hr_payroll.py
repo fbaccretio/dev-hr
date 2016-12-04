@@ -8,6 +8,14 @@ from datetime import timedelta
 DBG = True
 
 
+class HrContractL10nPFT(models.Model):
+    _inherit = 'hr.contract'
+
+    overtime_analytic = fields.Many2one(
+        'account.analytic.account',
+        string=u"Overtime Account")
+
+
 class HrPayslipPFT(models.Model):
     _inherit = 'hr.payslip'
 
@@ -59,15 +67,27 @@ class HrPayslipPFT(models.Model):
     def action_compensateOvetime(self):
         for rec in self:
             user_id = rec.contract_id.employee_id.user_id
+            a_acc = rec.contract_id.overtime_analytic
+            if not a_acc:
+                raise UserError(
+                    'No overtime analytic account set on contract!')
+            if not a_acc.salary_code:
+                raise UserError(
+                    'No salary code set on overtime analytic account!')
+            project = self.env['project.project'].search(
+                [('analytic_account_id', '=', a_acc.id)], limit=1)
+            if not project:
+                raise UserError(
+                    'No project linked to overtime analytic account!')
             date = rec.date_from  # on date_to there may be no timesheet yet?
             a_entry = self.env['account.analytic.line'].create({
-                'account_id': 3,    # TODO make configurable
+                'account_id': a_acc.id,
                 'user_id': user_id.id,
                 'company_id': user_id.company_id.id,
                 'unit_amount': (-1) * rec.hours_saldo,
                 'date': date,
                 'name': 'Overtime Compensation',
-                'project_id': 3,    # TODO make configurable
+                'project_id': project.id,
                 # 'sheet_id': ,
             })
             sheets = self.env['hr_timesheet_sheet.sheet'].search(
@@ -81,7 +101,7 @@ class HrPayslipPFT(models.Model):
                 'name': 'Overtime Compensation',
                 'payslip_id': rec.id,
                 'sequence': 100,
-                'code': 'OVRT_COMP',
+                'code': a_acc.salary_code,
                 'number_of_days': (-1) * round(rec.hours_saldo/8, 0),
                 'number_of_hours': (-1) * rec.hours_saldo,
                 'contract_id': rec.contract_id.id,
