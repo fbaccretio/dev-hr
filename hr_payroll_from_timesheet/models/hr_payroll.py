@@ -1,6 +1,9 @@
 # -*- encoding: utf-8 -*-
 
 from openerp import models, fields, api, exceptions, _
+from openerp.exceptions import UserError
+
+DBG = True
 
 
 class HrPayslipPFT(models.Model):
@@ -13,7 +16,21 @@ class HrPayslipPFT(models.Model):
         @return: returns a list of dict containing the input that should be
         applied for the given contract between date_from and date_to
         """
+        res = []
         for contract in self.env['hr.contract'].browse(contract_ids):
+            if not contract.employee_id.user_id:
+                empl_name = contract.employee_id.name_related
+                raise UserError(
+                    'No User related with Employee: {}'.format(empl_name))
+            attendances = {
+                     'name': _("Normal Working Days paid at 100%"),
+                     'sequence': 1,
+                     'code': 'WORK100',
+                     'number_of_days': 0.0,
+                     'number_of_hours': 0.0,
+                     'contract_id': contract.id,
+                }
+            leaves = {}
             query = """
             SELECT
                 l.date, l.account_id, a.salary_code, SUM(l.unit_amount) AS amt
@@ -34,11 +51,11 @@ class HrPayslipPFT(models.Model):
             ORDER BY
                 l.date;
             """.format(
-                self.date_from,
-                self.date_to,
-                self.employee_id.user_id.id,
-                self.company_id.id,
-                'draft')    # TODO 'done'
+                date_from,
+                date_to,
+                contract.employee_id.user_id.id,
+                contract.employee_id.user_id.company_id.id,
+                'draft' if DBG else 'done')
             self.env.cr.execute(query)
             analytic_lines_grouped = self.env.cr.dictfetchall()
             # analytic_lines_grouped is a list of dicts
@@ -49,17 +66,6 @@ class HrPayslipPFT(models.Model):
             #     'amt': 4.0
             # },
             # {...}, ...]
-
-            res = []
-            attendances = {
-                     'name': _("Normal Working Days paid at 100%"),
-                     'sequence': 1,
-                     'code': 'WORK100',
-                     'number_of_days': 0.0,
-                     'number_of_hours': 0.0,
-                     'contract_id': contract.id,
-                }
-            leaves = {}
 
             for l in analytic_lines_grouped:
                 print '{} {} {} {}'.format(
