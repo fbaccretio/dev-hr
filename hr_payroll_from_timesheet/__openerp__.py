@@ -19,6 +19,7 @@ information from timesheet is taken into account.
     ],
     'data': [
         'views/analytic_account_view.xml',
+        'views/hr_payslip_view.xml'
     ],
     'installable': True,
     'application': False,

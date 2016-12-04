@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="hr_payslip_form_view_form_pft" model="ir.ui.view">
+            <field name="name">hr.payslip.form.inherit.form.pft</field>
+            <field name="model">hr.payslip</field>
+            <field name="priority">20</field>
+            <field name="inherit_id" ref="hr_payroll.view_hr_payslip_form"/>
+            <field name="arch" type="xml">
+            <data>
+                 <xpath expr="//field[@name='worked_days_line_ids']" position="after">
+                    <group>
+                        <group>
+                        </group>
+                        <group>
+                            <field name="hours_scheduled"/>
+                            <field name="hours_worked"/>
+                        </group>
+                    </group>
+                 </xpath>
+
+                <xpath expr="//field[@name='number_of_hours']" position="attributes">
+                    <attribute name="sum">Total Working Hours</attribute>
+                </xpath>
+            </data>
+            </field>
+        </record>
+    </data>
+</odoo>
