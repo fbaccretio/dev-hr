@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <record model="account.analytic.account" id="leave_military">
+            <field name="name">Military</field>
+            <field name="active" eval="True"/>
+            <field name="use_tasks" eval="True"/>
+            <field name="use_leaves" eval="True"/>
+            <field name="salary_code">MILITARY</field>
+        </record>
+        <record model="account.analytic.account" id="leave_refresh">
+            <field name="name">Refresher Course</field>
+            <field name="active" eval="True"/>
+            <field name="use_tasks" eval="True"/>
+            <field name="use_leaves" eval="True"/>
+            <field name="salary_code">REFRSH_COURS</field>
+        </record>
+        <record model="account.analytic.account" id="leave_illness">
+            <field name="name">Illness</field>
+            <field name="active" eval="True"/>
+            <field name="use_tasks" eval="True"/>
+            <field name="use_leaves" eval="True"/>
+            <field name="salary_code">ILLNESS</field>
+        </record>
+        <record model="account.analytic.account" id="leave_paid_leave">
+            <field name="name">Paid Leave</field>
+            <field name="active" eval="True"/>
+            <field name="use_tasks" eval="True"/>
+            <field name="use_leaves" eval="True"/>
+            <field name="salary_code">PAID_LEAVE</field>
+        </record>
+        <record model="account.analytic.account" id="leave_school">
+            <field name="name">School</field>
+            <field name="active" eval="True"/>
+            <field name="use_tasks" eval="True"/>
+            <field name="use_leaves" eval="True"/>
+            <field name="salary_code">SCHOOL</field>
+        </record>
+        <record model="account.analytic.account" id="leave_holiday">
+            <field name="name">Holiday</field>
+            <field name="active" eval="True"/>
+            <field name="use_tasks" eval="True"/>
+            <field name="use_leaves" eval="True"/>
+            <field name="salary_code">HOLIDAY</field>
+        </record>
+        <record model="account.analytic.account" id="leave_overtime">
+            <field name="name">Overtime</field>
+            <field name="active" eval="True"/>
+            <field name="use_tasks" eval="False"/>
+            <field name="use_leaves" eval="True"/>
+            <field name="salary_code">OVERTIME</field>
+        </record>
+
+    </data>
+</odoo>

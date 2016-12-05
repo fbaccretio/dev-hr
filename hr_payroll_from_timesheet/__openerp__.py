@@ -1,7 +1,7 @@
 # -*- encoding: utf-8 -*-
 
 {
-    'name': 'Fill payslip from timesheet',
+    'name': 'Payroll Customization For Baumann Elektro',
     'version': '1.0',
     'license': 'OPL-1',
     'category': 'HR',
@@ -16,8 +16,10 @@ information from timesheet is taken into account.
         'hr_timesheet',
         'hr_timesheet_sheet',
         'hr_payroll',
+        'hr_holidays',
     ],
     'data': [
+        'data/analytic_accounts.xml',
         'views/analytic_account_view.xml',
         'views/hr_payslip_view.xml'
     ],
