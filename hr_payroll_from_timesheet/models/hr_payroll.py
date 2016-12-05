@@ -34,11 +34,89 @@ class HrPayslipPFT(models.Model):
         compute='_compute_hours_saldo',
         store=True)
 
+    leaves_allocated = fields.Float(
+        string='Leaves Allocated',
+        compute='_compute_leaves_allocated',
+        store=True)
+    leaves_used = fields.Float(
+        string='Leaves Used',
+        compute='_compute_leaves_used',
+        store=True)
+    leaves_remaining = fields.Float(
+        string='Leaves Remaining',
+        compute='_compute_leaves_remaining',
+        store=True)
+
+    def _get_leaves_allocated(self):
+        user_id = self.contract_id.employee_id.user_id
+        if not user_id:
+            return
+        self.env.cr.execute("""
+            SELECT
+                sum(h.number_of_days) AS days,
+                h.employee_id
+            FROM
+                hr_holidays h
+                join hr_holidays_status s ON (s.id=h.holiday_status_id)
+            WHERE
+                h.state='validate' AND
+                h.type='add' AND
+                s.limit=False AND
+                h.employee_id in %s
+            GROUP BY h.employee_id""", (tuple(user_id.ids),))
+        return dict(
+            (row['employee_id'],
+             row['days']) for row in self.env.cr.dictfetchall())
+
+    @api.depends('contract_id')
+    def _compute_leaves_allocated(self):
+        for rec in self:
+            if not rec.contract_id or not rec.contract_id.employee_id:
+                continue
+            allocated = rec._get_leaves_allocated()
+            user_id = rec.contract_id.employee_id.user_id
+            rec.leaves_allocated = allocated.get(user_id.id, 0.0)
+
+    def _get_leaves_used(self):
+        user_id = self.contract_id.employee_id.user_id
+        if not user_id:
+            return
+        self.env.cr.execute("""
+            SELECT
+                sum(h.number_of_days) AS days,
+                h.employee_id
+            FROM
+                hr_holidays h
+                join hr_holidays_status s ON (s.id=h.holiday_status_id)
+            WHERE
+                h.state='validate' AND
+                h.type='remove' AND
+                s.limit=False AND
+                h.employee_id in %s
+            GROUP BY h.employee_id""", (tuple(user_id.ids),))
+        return dict(
+            (row['employee_id'],
+             row['days']) for row in self.env.cr.dictfetchall())
+
+    @api.depends('contract_id')
+    def _compute_leaves_used(self):
+        for rec in self:
+            if not rec.contract_id or not rec.contract_id.employee_id:
+                continue
+            allocated = rec._get_leaves_used()
+            user_id = rec.contract_id.employee_id.user_id
+            rec.leaves_used = -1 * allocated.get(user_id.id, 0.0)
+
+    @api.depends('leaves_allocated', 'leaves_used')
+    def _compute_leaves_remaining(self):
+        for rec in self:
+            rec.leaves_remaining = rec.leaves_allocated - rec.leaves_used
+
     @api.depends('date_from', 'date_to', 'contract_id')
     def _compute_hours_scheduled(self):
         for rec in self:
             if not rec.contract_id.working_hours:
-                pass
+                continue
             wrk_hrs = rec.contract_id.working_hours
             day_from = fields.Datetime.from_string(rec.date_from)
             day_to = fields.Datetime.from_string(rec.date_to)

@@ -21,7 +21,8 @@ information from timesheet is taken into account.
     'data': [
         'data/analytic_accounts.xml',
         'views/analytic_account_view.xml',
-        'views/hr_payslip_view.xml'
+        'views/hr_payslip_view.xml',
+        'views/hr_holidays_view.xml',
     ],
     'installable': True,
     'application': False,

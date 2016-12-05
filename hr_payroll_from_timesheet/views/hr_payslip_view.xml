@@ -11,6 +11,9 @@
                  <xpath expr="//field[@name='worked_days_line_ids']" position="after">
                     <group>
                         <group>
+                            <field name="leaves_allocated" widget="float_time"  class="oe_inline"/> hours
+                            <field name="leaves_used" widget="float_time"  class="oe_inline"/> hours
+                            <field name="leaves_remaining" widget="float_time"  class="oe_inline"/> hours
                         </group>
                         <group>
                             <field name="hours_worked" widget="float_time"/>

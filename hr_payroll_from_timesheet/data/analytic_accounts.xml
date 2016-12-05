@@ -24,11 +24,11 @@
             <field name="salary_code">ILLNESS</field>
         </record>
         <record model="account.analytic.account" id="leave_paid_leave">
-            <field name="name">Paid Leave</field>
+            <field name="name">Paid Leaves</field>
             <field name="active" eval="True"/>
             <field name="use_tasks" eval="True"/>
             <field name="use_leaves" eval="True"/>
-            <field name="salary_code">PAID_LEAVE</field>
+            <field name="salary_code">PAID_LEAVES</field>
         </record>
         <record model="account.analytic.account" id="leave_school">
             <field name="name">School</field>
@@ -38,11 +38,11 @@
             <field name="salary_code">SCHOOL</field>
         </record>
         <record model="account.analytic.account" id="leave_holiday">
-            <field name="name">Holiday</field>
+            <field name="name">Holidays</field>
             <field name="active" eval="True"/>
             <field name="use_tasks" eval="True"/>
             <field name="use_leaves" eval="True"/>
-            <field name="salary_code">HOLIDAY</field>
+            <field name="salary_code">HOLIDAYS</field>
         </record>
         <record model="account.analytic.account" id="leave_overtime">
             <field name="name">Overtime</field>
