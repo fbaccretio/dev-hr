@@ -10,8 +10,8 @@
             <field name="arch" type="xml">
 
                 <xpath expr='//div[@name="project"]' position='inside'>
-                    <field name="use_leaves"/>
-                    <label for="use_leaves"/>
+                    <field name="use_leaves" groups="base.group_no_one"/>
+                    <label for="use_leaves" groups="base.group_no_one"/>
                 </xpath>
 
                 <xpath expr="//field[@name='partner_id']" position="after">

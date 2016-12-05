@@ -12,12 +12,12 @@ class AccountAnalyticAccountPFT(models.Model):
 
     salary_code = fields.Char(string='Salary Code')
 
-    @api.onchange('use_leaves')
-    def onchange_use_leaves(self):
-        self.ensure_one()
-        if self.use_leaves and not self.use_tasks:
-            self.use_tasks = True
-        return
+    # @api.onchange('use_leaves')
+    # def onchange_use_leaves(self):
+    #     self.ensure_one()
+    #     if self.use_leaves and not self.use_tasks:
+    #         self.use_tasks = True
+    #     return
 
     @api.multi
     def write(self, vals):
@@ -34,7 +34,7 @@ class AccountAnalyticAccountPFT(models.Model):
         return super(AccountAnalyticAccountPFT, self).create(vals)
 
 
-class AccountAnalyticLinePFT(models.Model):
-    _inherit = 'account.analytic.line'
-    # reference to timesheet state for domain criteria
-    sheet_state = fields.Selection(related='sheet_id.state')
+# class AccountAnalyticLinePFT(models.Model):
+#     _inherit = 'account.analytic.line'
+#     # reference to timesheet state for domain criteria
+#     sheet_state = fields.Selection(related='sheet_id.state')

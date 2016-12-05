@@ -97,12 +97,6 @@ class HrPayslipPFT(models.Model):
                 raise UserError(
                     'No salary code set on overtime analytic account!')
 
-            project = self.env['project.project'].search(
-                [('analytic_account_id', '=', a_acc.id)], limit=1)
-            if not project:
-                raise UserError(
-                    'No project linked to overtime analytic account!')
-
             for w_line in rec.worked_days_line_ids:
                 # 1. check if there is OVRT_COMP
                 # line and make analytic entry
@@ -115,16 +109,7 @@ class HrPayslipPFT(models.Model):
                         'unit_amount': w_line.number_of_hours,
                         'date': date_curr_month,
                         'name': 'Overtime Compensation (Paid)',
-                        'project_id': project.id,
-                        # 'sheet_id': ,
                     })
-                    sheets = self.env['hr_timesheet_sheet.sheet'].search(
-                        [('date_to', '>=', date_curr_month),
-                         ('date_from', '<=', date_curr_month),
-                         ('employee_id.user_id.id', '=', user_id.id)])
-                    if sheets:
-                        a_entry.sheet_id_computed = sheets[0]
-                        a_entry.sheet_id = sheets[0]
 
             # 2. check if there is hours_saldo
             # and make analytic entry nexth month
@@ -141,16 +126,7 @@ class HrPayslipPFT(models.Model):
                     'unit_amount': rec.hours_saldo,
                     'date': date_next_month,
                     'name': 'Overtime moved from ' + month_name,
-                    'project_id': project.id,
-                    # 'sheet_id': ,
                 })
-                sheets = self.env['hr_timesheet_sheet.sheet'].search(
-                    [('date_to', '>=', date_next_month),
-                     ('date_from', '<=', date_next_month),
-                     ('employee_id.user_id.id', '=', user_id.id)])
-                if sheets:
-                    a_entry.sheet_id_computed = sheets[0]
-                    a_entry.sheet_id = sheets[0]
 
             rec.compute_sheet()
             return rec.write({'state': 'done'})
@@ -168,6 +144,13 @@ class HrPayslipPFT(models.Model):
                 empl_name = contract.employee_id.name_related
                 raise UserError(
                     'No User related with Employee: {}'.format(empl_name))
+            a_acc = contract.overtime_analytic
+            if not a_acc:
+                raise UserError(
+                    'No overtime analytic account set on contract!')
+            if not a_acc.salary_code:
+                raise UserError(
+                    'No salary code set on overtime analytic account!')
             attendances = {
                      'name': _("Normal Working Days paid at 100%"),
                      'sequence': 1,
@@ -184,14 +167,15 @@ class HrPayslipPFT(models.Model):
                 account_analytic_line l
                 INNER JOIN account_analytic_account a
                     ON a.id = l.account_id
-                INNER JOIN hr_timesheet_sheet_sheet s
+                LEFT JOIN hr_timesheet_sheet_sheet s
                     ON l.sheet_id = s.id
             WHERE
                 l.date >= '{}'
                 AND l.date <= '{}'
                 AND l.user_id = {}
                 AND l.company_id = {}
-                AND s.state = '{}'
+                AND (s.state = '{}'
+                OR a.salary_code = '{}')
             GROUP BY
                 l.date, l.account_id, a.salary_code
             ORDER BY
@@ -201,7 +185,8 @@ class HrPayslipPFT(models.Model):
                 date_to,
                 contract.employee_id.user_id.id,
                 contract.employee_id.user_id.company_id.id,
-                'draft' if DBG else 'done')
+                'draft' if DBG else 'done',
+                a_acc.salary_code)
             self.env.cr.execute(query)
             analytic_lines_grouped = self.env.cr.dictfetchall()
             # analytic_lines_grouped is a list of dicts
