@@ -66,7 +66,6 @@ class HrPayslipPFT(models.Model):
     @api.multi
     def action_compensateOvetime(self):
         for rec in self:
-            user_id = rec.contract_id.employee_id.user_id
             a_acc = rec.contract_id.overtime_analytic
             if not a_acc:
                 raise UserError(
@@ -74,28 +73,6 @@ class HrPayslipPFT(models.Model):
             if not a_acc.salary_code:
                 raise UserError(
                     'No salary code set on overtime analytic account!')
-            project = self.env['project.project'].search(
-                [('analytic_account_id', '=', a_acc.id)], limit=1)
-            if not project:
-                raise UserError(
-                    'No project linked to overtime analytic account!')
-            date = rec.date_from  # on date_to there may be no timesheet yet?
-            a_entry = self.env['account.analytic.line'].create({
-                'account_id': a_acc.id,
-                'user_id': user_id.id,
-                'company_id': user_id.company_id.id,
-                'unit_amount': (-1) * rec.hours_saldo,
-                'date': date,
-                'name': 'Overtime Compensation',
-                'project_id': project.id,
-                # 'sheet_id': ,
-            })
-            sheets = self.env['hr_timesheet_sheet.sheet'].search(
-                [('date_to', '>=', date), ('date_from', '<=', date),
-                 ('employee_id.user_id.id', '=', user_id.id)])
-            if sheets:
-                a_entry.sheet_id_computed = sheets[0]
-                a_entry.sheet_id = sheets[0]
 
             w_line = self.env['hr.payslip.worked_days'].create({
                 'name': 'Overtime Compensation',
@@ -106,6 +83,77 @@ class HrPayslipPFT(models.Model):
                 'number_of_hours': (-1) * rec.hours_saldo,
                 'contract_id': rec.contract_id.id,
             })
+
+    @api.multi
+    def action_payslip_done(self):
+        for rec in self:
+            user_id = rec.contract_id.employee_id.user_id
+
+            a_acc = rec.contract_id.overtime_analytic
+            if not a_acc:
+                raise UserError(
+                    'No overtime analytic account set on contract!')
+            if not a_acc.salary_code:
+                raise UserError(
+                    'No salary code set on overtime analytic account!')
+
+            project = self.env['project.project'].search(
+                [('analytic_account_id', '=', a_acc.id)], limit=1)
+            if not project:
+                raise UserError(
+                    'No project linked to overtime analytic account!')
+
+            for w_line in rec.worked_days_line_ids:
+                # 1. check if there is OVRT_COMP
+                # line and make analytic entry
+                if w_line.code == a_acc.salary_code:
+                    date_curr_month = rec.date_from
+                    a_entry = self.env['account.analytic.line'].create({
+                        'account_id': a_acc.id,
+                        'user_id': user_id.id,
+                        'company_id': user_id.company_id.id,
+                        'unit_amount': w_line.number_of_hours,
+                        'date': date_curr_month,
+                        'name': 'Overtime Compensation (Paid)',
+                        'project_id': project.id,
+                        # 'sheet_id': ,
+                    })
+                    sheets = self.env['hr_timesheet_sheet.sheet'].search(
+                        [('date_to', '>=', date_curr_month),
+                         ('date_from', '<=', date_curr_month),
+                         ('employee_id.user_id.id', '=', user_id.id)])
+                    if sheets:
+                        a_entry.sheet_id_computed = sheets[0]
+                        a_entry.sheet_id = sheets[0]
+
+            # 2. check if there is hours_saldo
+            # and make analytic entry nexth month
+            if rec.hours_saldo > 0:
+                month_name = fields.Datetime.from_string(
+                    rec.date_from).strftime('%B %Y')
+                date_to = fields.Datetime.from_string(rec.date_to)
+                date_to += timedelta(days=1)
+                date_next_month = date_to.strftime('%Y-%m-%d')
+                a_entry = self.env['account.analytic.line'].create({
+                    'account_id': a_acc.id,
+                    'user_id': user_id.id,
+                    'company_id': user_id.company_id.id,
+                    'unit_amount': rec.hours_saldo,
+                    'date': date_next_month,
+                    'name': 'Overtime moved from ' + month_name,
+                    'project_id': project.id,
+                    # 'sheet_id': ,
+                })
+                sheets = self.env['hr_timesheet_sheet.sheet'].search(
+                    [('date_to', '>=', date_next_month),
+                     ('date_from', '<=', date_next_month),
+                     ('employee_id.user_id.id', '=', user_id.id)])
+                if sheets:
+                    a_entry.sheet_id_computed = sheets[0]
+                    a_entry.sheet_id = sheets[0]
+
+            rec.compute_sheet()
+            return rec.write({'state': 'done'})
 
     @api.model
     def get_worked_day_lines(self, contract_ids, date_from, date_to):
