@@ -77,60 +77,19 @@ class HrPayslipPFT(models.Model):
             user_id = rec.contract_id.employee_id.user_id
             rec.leaves_allocated = 8 * allocated.get(user_id.id, 0.0)
 
-    def _get_leaves_used(self):
-        user_id = self.contract_id.employee_id.user_id
-        if not user_id:
-            return
-        self.env.cr.execute("""
-            SELECT
-                sum(h.number_of_days) AS days,
-                h.employee_id
-            FROM
-                hr_holidays h
-                join hr_holidays_status s ON (s.id=h.holiday_status_id)
-            WHERE
-                h.state='validate' AND
-                h.type='remove' AND
-                s.limit=False AND
-                h.employee_id in %s
-            GROUP BY h.employee_id""", (tuple(user_id.ids),))
-        return dict(
-            (row['employee_id'],
-             row['days']) for row in self.env.cr.dictfetchall())
-
     @api.depends('contract_id')
     def _compute_leaves_used(self):
         for rec in self:
             if not rec.contract_id or not rec.contract_id.employee_id:
                 continue
-            # allocated = rec._get_leaves_used()
             user_id = rec.contract_id.employee_id.user_id
             employee_id = rec.contract_id.employee_id
-            # rec.leaves_used = -8 * allocated.get(user_id.id, 0.0)
 
             leaves_type = rec.env['hr.holidays.status'].search(
                 [('holidays_analytic_id', '!=', False),
                  ('active', '=', True)], limit=1)
-            print leaves_type
             if not leaves_type:
                 return
-            ######
-            # taken_leaves = rec.env['hr.holidays'].search(
-            #     [('holiday_status_id', '=', leaves_type.id),
-            #      ('employee_id', '=', employee_id.id),
-            #      ('type', '=', 'remove'),
-            #      ('state', '=', 'validate')])
-            # print taken_leaves
-            # if not taken_leaves:
-            #     return
-            # hrs = 0.0
-            # for leave in taken_leaves:
-            #     hrs += leave._get_number_of_hours(
-            #         leave.date_from,
-            #         leave.date_to,
-            #         employee_id.id)
-            # rec.leaves_used = hrs
-            ######
             strt_yr = rec.date_from[:4] + '-01-01'
             end_yr = rec.date_from[:4] + '-12-31'
             hol_lines = rec.env['account.analytic.line'].search([

@@ -34,7 +34,9 @@ class AccountAnalyticAccountPFT(models.Model):
         return super(AccountAnalyticAccountPFT, self).create(vals)
 
 
-# class AccountAnalyticLinePFT(models.Model):
-#     _inherit = 'account.analytic.line'
-#     # reference to timesheet state for domain criteria
-#     sheet_state = fields.Selection(related='sheet_id.state')
+class AccountAnalyticLinePFT(models.Model):
+    _inherit = 'account.analytic.line'
+    # reference to timesheet state for domain criteria
+    holiday_id = fields.Many2one(
+        'hr.holidays',
+        string='Holiday entry')
