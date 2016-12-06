@@ -75,7 +75,7 @@ class HrPayslipPFT(models.Model):
                 continue
             allocated = rec._get_leaves_allocated()
             user_id = rec.contract_id.employee_id.user_id
-            rec.leaves_allocated = allocated.get(user_id.id, 0.0)
+            rec.leaves_allocated = 8 * allocated.get(user_id.id, 0.0)
 
     def _get_leaves_used(self):
         user_id = self.contract_id.employee_id.user_id
@@ -103,9 +103,45 @@ class HrPayslipPFT(models.Model):
         for rec in self:
             if not rec.contract_id or not rec.contract_id.employee_id:
                 continue
-            allocated = rec._get_leaves_used()
+            # allocated = rec._get_leaves_used()
             user_id = rec.contract_id.employee_id.user_id
-            rec.leaves_used = -1 * allocated.get(user_id.id, 0.0)
+            employee_id = rec.contract_id.employee_id
+            # rec.leaves_used = -8 * allocated.get(user_id.id, 0.0)
+
+            leaves_type = rec.env['hr.holidays.status'].search(
+                [('holidays_analytic_id', '!=', False)], limit=1)
+            print leaves_type
+            if not leaves_type:
+                return
+            ######
+            # taken_leaves = rec.env['hr.holidays'].search(
+            #     [('holiday_status_id', '=', leaves_type.id),
+            #      ('employee_id', '=', employee_id.id),
+            #      ('type', '=', 'remove'),
+            #      ('state', '=', 'validate')])
+            # print taken_leaves
+            # if not taken_leaves:
+            #     return
+            # hrs = 0.0
+            # for leave in taken_leaves:
+            #     hrs += leave._get_number_of_hours(
+            #         leave.date_from,
+            #         leave.date_to,
+            #         employee_id.id)
+            # rec.leaves_used = hrs
+            ######
+            strt_yr = rec.date_from[:4] + '-01-01'
+            end_yr = rec.date_from[:4] + '-12-31'
+            hol_lines = rec.env['account.analytic.line'].search([
+                ('date', '>=', strt_yr),
+                ('date', '<=', end_yr),
+                ('account_id', '=', leaves_type.holidays_analytic_id.id),
+                ('user_id', '=', user_id.id),
+                ('company_id', '=', user_id.company_id.id)])
+            hrs = 0.0
+            for l in hol_lines:
+                hrs += l.unit_amount
+            rec.leaves_used = hrs
 
     @api.depends('leaves_allocated', 'leaves_used')
     def _compute_leaves_remaining(self):
@@ -253,7 +289,7 @@ class HrPayslipPFT(models.Model):
                 AND l.user_id = {}
                 AND l.company_id = {}
                 AND (s.state = '{}'
-                OR a.salary_code = '{}')
+                OR (a.salary_code = '{}' AND a.use_leaves IS TRUE))
             GROUP BY
                 l.date, l.account_id, a.salary_code
             ORDER BY

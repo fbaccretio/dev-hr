@@ -35,12 +35,13 @@ class HolidaysPFT(models.Model):
                     to_dt,
                     resource_id=resource.id,
                     compute_leaves=True)
+                return hours
 
         time_delta = to_dt - from_dt
-        return math.ceil(time_delta.days + float(time_delta.seconds) / 3600)
+        return math.ceil(time_delta.days*8 + float(time_delta.seconds) / 3600)
 
     @api.multi
-    def action_validate(self):
+    def action_validate(self):      # TODO unlink on reset to draft
         res = super(HolidaysPFT, self).action_validate()
         if self.type == 'add':
             # allocation request
@@ -65,16 +66,17 @@ class HolidaysPFT(models.Model):
         count = 0
         while hours_numb > 0:
             hrs = hours_numb if hours_numb <= HOURS_PER_DAY else HOURS_PER_DAY
-            print hrs
             date += timedelta(days=count)
             date_entry = date.strftime('%Y-%m-%d')
+            hol_typ_n = self.holiday_status_id.name
+            name = (self.name if self.name else hol_typ_n) + '/' + str(count+1)
             a_entry = self.env['account.analytic.line'].create({
                 'account_id': a_acc.id,
                 'user_id': self.user_id.id,
                 'company_id': self.user_id.company_id.id,
                 'unit_amount': hrs,
                 'date': date_entry,
-                'name': self.name + '/' + str(count),
+                'name': name,
                 'project_id': project.id,
             })
             sheets = self.env['hr_timesheet_sheet.sheet'].search(
