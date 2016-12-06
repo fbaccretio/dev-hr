@@ -109,7 +109,8 @@ class HrPayslipPFT(models.Model):
             # rec.leaves_used = -8 * allocated.get(user_id.id, 0.0)
 
             leaves_type = rec.env['hr.holidays.status'].search(
-                [('holidays_analytic_id', '!=', False)], limit=1)
+                [('holidays_analytic_id', '!=', False),
+                 ('active', '=', True)], limit=1)
             print leaves_type
             if not leaves_type:
                 return
