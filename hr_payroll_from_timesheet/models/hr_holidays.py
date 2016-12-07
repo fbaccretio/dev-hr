@@ -43,7 +43,9 @@ class HolidaysPFT(models.Model):
                 return hours
 
         time_delta = to_dt - from_dt
-        return time_delta.days * 8.0 + (float(time_delta.seconds) / 3600) - 4.0
+        delta_hrs = (float(time_delta.seconds) / 3600)
+        delta_hrs_eight = delta_hrs if delta_hrs < 8.0 else 8.0
+        return time_delta.days * 8.0 + delta_hrs_eight
 
     @api.multi
     def action_validate(self):
